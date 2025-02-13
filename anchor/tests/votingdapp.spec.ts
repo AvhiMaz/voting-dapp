@@ -11,17 +11,23 @@ const votingAddress = new PublicKey(
 );
 
 describe("votingdapp", () => {
-  it("Initialize Votingdapp", async () => {
-    const context = await startAnchor(
+  let context;
+  let provider;
+  let votingProgram: anchor.Program<Votingdapp>;
+
+  beforeAll(async () => {
+    context = await startAnchor(
       "",
       [{ name: "votingdapp", programId: votingAddress }],
       []
     );
 
-    const provider = new BankrunProvider(context);
+    provider = new BankrunProvider(context);
 
-    const votingProgram = new Program<Votingdapp>(IDL, provider);
+    votingProgram = new Program<Votingdapp>(IDL, provider);
+  });
 
+  it("Initialize Votingdapp", async () => {
     await votingProgram.methods
       .initializePoll(
         new anchor.BN(1),
@@ -43,5 +49,36 @@ describe("votingdapp", () => {
     expect(poll.pollId.toNumber()).toBe(1);
     expect(poll.description).toBe("What is your favorite team?");
     expect(poll.pollStart.toNumber()).toBeLessThan(poll.pollEnd.toNumber());
+  });
+
+  it("Initialize Candidates", async () => {
+    await votingProgram.methods
+      .initializeCandidates("India", new anchor.BN(1))
+      .rpc();
+    await votingProgram.methods
+      .initializeCandidates("Nz", new anchor.BN(1))
+      .rpc();
+
+    const [indiaAddress] = PublicKey.findProgramAddressSync(
+      [new anchor.BN(1).toArrayLike(Buffer, "le", 8), Buffer.from("India")],
+      votingAddress
+    );
+
+    const indiaCandidates = await votingProgram.account.candidate.fetch(
+      indiaAddress
+    );
+    console.log("India Candidates+++++++++++++", indiaCandidates);
+
+    expect(indiaCandidates.candidateVote.toNumber()).toEqual(0);
+
+    const [nzAddress] = PublicKey.findProgramAddressSync(
+      [new anchor.BN(1).toArrayLike(Buffer, "le", 8), Buffer.from("Nz")],
+      votingAddress
+    );
+
+    const nzCandidates = await votingProgram.account.candidate.fetch(nzAddress);
+
+    console.log("Nz Candidates+++++++++++++", nzCandidates);
+    expect(nzCandidates.candidateVote.toNumber()).toEqual(0);
   });
 });
