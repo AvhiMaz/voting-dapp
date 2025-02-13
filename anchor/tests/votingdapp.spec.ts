@@ -44,7 +44,7 @@ describe("votingdapp", () => {
 
     const poll = await votingProgram.account.poll.fetch(pollAddress);
 
-    console.log("Poll+++++++++++++", poll);
+    console.log(poll);
 
     expect(poll.pollId.toNumber()).toBe(1);
     expect(poll.description).toBe("What is your favorite team?");
@@ -67,7 +67,7 @@ describe("votingdapp", () => {
     const indiaCandidates = await votingProgram.account.candidate.fetch(
       indiaAddress
     );
-    console.log("India Candidates+++++++++++++", indiaCandidates);
+    console.log(indiaCandidates);
 
     expect(indiaCandidates.candidateVote.toNumber()).toEqual(0);
 
@@ -78,7 +78,23 @@ describe("votingdapp", () => {
 
     const nzCandidates = await votingProgram.account.candidate.fetch(nzAddress);
 
-    console.log("Nz Candidates+++++++++++++", nzCandidates);
+    console.log(nzCandidates);
     expect(nzCandidates.candidateVote.toNumber()).toEqual(0);
+  });
+
+  it("vote", async () => {
+    await votingProgram.methods.vote("India", new anchor.BN(1)).rpc();
+
+    const [indiaAddress] = PublicKey.findProgramAddressSync(
+      [new anchor.BN(1).toArrayLike(Buffer, "le", 8), Buffer.from("India")],
+      votingAddress
+    );
+
+    const indiaCandidates = await votingProgram.account.candidate.fetch(
+      indiaAddress
+    );
+    console.log(indiaCandidates);
+
+    expect(indiaCandidates.candidateVote.toNumber()).toEqual(1);
   });
 });
